@@ -3,6 +3,7 @@ package repositories
 import (
 	// "GameWala-Arcade/models"
 	"GameWala-Arcade/models"
+	"GameWala-Arcade/utils"
 	"database/sql"
 	"fmt"
 )
@@ -24,10 +25,12 @@ func NewPlayGameReposiory(db *sql.DB) *playGameRepository {
 }
 
 func (r *playGameRepository) SaveGameStatus(status models.GameStatus) (int, error) {
+	utils.LogInfo("Saving game status to database for game ID %d", status.GameId)
 
 	// Prepare the call to the stored procedure
 	stmt, err := r.db.Prepare("SELECT func_InsertGameStatus($1, $2, $3, $4, $5, $6, $7, $8)")
 	if err != nil {
+		utils.LogError("Failed to prepare save game status statement: %v", err)
 		return 0, fmt.Errorf("error preparing statement: %w", err)
 	}
 	defer stmt.Close()
@@ -36,13 +39,16 @@ func (r *playGameRepository) SaveGameStatus(status models.GameStatus) (int, erro
 		status.PlayTime, status.Levels, status.PaymentReference, status.Code)
 
 	if err != nil {
+		utils.LogError("Failed to execute save game status for game ID %d: %v", status.GameId, err)
 		return 0, fmt.Errorf("error executing function: %w", err)
 	}
 
+	utils.LogInfo("Successfully saved game status for game ID %d", status.GameId)
 	return 1, nil
 }
 
 func (r *playGameRepository) ValidateTimeAndPrice(gameId uint16, price uint16, playTime *uint16) error {
+	utils.LogInfo("Validating time and price in database for game ID %d", gameId)
 	stmt, err := r.db.Prepare("Select func_ValidateTimeAndPice($1, $2, $3)")
 
 	if err != nil {
@@ -59,6 +65,7 @@ func (r *playGameRepository) ValidateTimeAndPrice(gameId uint16, price uint16, p
 	}
 
 	if !exists {
+		utils.LogError("Invalid time and price combination for game ID %d: price=%d, time=%d", gameId, price, *playTime)
 		return fmt.Errorf("wrong combination of price and time provided %w", err)
 	}
 
@@ -66,6 +73,7 @@ func (r *playGameRepository) ValidateTimeAndPrice(gameId uint16, price uint16, p
 }
 
 func (r *playGameRepository) ValidateLevelsAndPrice(gameId uint16, price uint16, levels *uint8) error {
+	utils.LogInfo("Validating levels and price in database for game ID %d", gameId)
 	stmt, err := r.db.Prepare("Select func_ValidateLevelsAndPrice($1, $2, $3)")
 
 	if err != nil {
@@ -82,6 +90,7 @@ func (r *playGameRepository) ValidateLevelsAndPrice(gameId uint16, price uint16,
 	}
 
 	if !exists {
+		utils.LogError("Invalid level and price combination for game ID %d: price=%d, level=%d", gameId, price, *levels)
 		return fmt.Errorf("wrong combination of time and level provided %w", err)
 	}
 
@@ -89,10 +98,12 @@ func (r *playGameRepository) ValidateLevelsAndPrice(gameId uint16, price uint16,
 }
 
 func (r *playGameRepository) GetGames() ([]models.GameResponse, error) {
+	utils.LogInfo("Fetching all games from database")
 
 	rows, err := r.db.Query("Select * from func_GetGamesForUsers()")
 
 	if err != nil {
+		utils.LogError("Failed to fetch games from database: %v", err)
 		return nil, fmt.Errorf("error preparing statement: %w", err)
 	}
 
