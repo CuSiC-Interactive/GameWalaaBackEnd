@@ -31,7 +31,11 @@ func main() {
 	adminConsoleService := services.NewAdminConsoleService(adminConsoleRepository)
 	adminConsoleHandler := handlers.NewAdminConsoleHandler(adminConsoleService)
 
-	routes.SetupRoutes(router, adminConsoleHandler)
+	playGameRespository := repositories.NewPlayGameReposiory(db.DB)
+	playGameService := services.NewPlayGameService(playGameRespository)
+	playGameHandler := handlers.NewPlayGameHandler(playGameService)
+
+	routes.SetupRoutes(router, adminConsoleHandler, playGameHandler)
 
 	router.Run("0.0.0.0:8080")
 }

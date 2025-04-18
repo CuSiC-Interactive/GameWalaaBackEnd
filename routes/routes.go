@@ -7,7 +7,8 @@ import (
 )
 
 func SetupRoutes(router *gin.Engine,
-	adminConsoleHandler handlers.AdminConsoleHandler) {
+	adminConsoleHandler handlers.AdminConsoleHandler,
+	playGameHandler handlers.PlayGameHandler) {
 	v1 := router.Group("/api/v1")
 	{
 		admin := v1.Group("/restricted")
@@ -19,6 +20,12 @@ func SetupRoutes(router *gin.Engine,
 			// admin.POST("/", adminConsoleHandler.AddGames)
 			// admin.PUT("/", adminConsoleHandler.UpdateGames)
 			// admin.DELETE("/", adminConsoleHandler.DeleteGames)
+		}
+
+		users := v1.Group("")
+		{
+			users.GET("/games", playGameHandler.GetGamesCatalogue)
+			users.POST("/games/status", playGameHandler.SaveGameStatus)
 		}
 	}
 }
