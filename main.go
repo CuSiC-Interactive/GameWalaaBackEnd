@@ -8,14 +8,21 @@ import (
 	"GameWala-Arcade/services"
 
 	"GameWala-Arcade/config"
+	"GameWala-Arcade/utils"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 )
 
 func main() {
+	// Initialize logger
+	if err := utils.InitLogger(); err != nil {
+		panic("Failed to initialize logger: " + err.Error())
+	}
+	defer utils.CloseLogger()
 
 	router := gin.Default() // initialize the router for gin.
+	utils.LogInfo("Starting GameWala-Arcade server...")
 	config.LoadConfig()     // load the configurations.
 	db.Initialize()         // Initlialize the db based on the configs loaded.
 
@@ -31,7 +38,15 @@ func main() {
 	adminConsoleService := services.NewAdminConsoleService(adminConsoleRepository)
 	adminConsoleHandler := handlers.NewAdminConsoleHandler(adminConsoleService)
 
-	routes.SetupRoutes(router, adminConsoleHandler)
+	playGameRespository := repositories.NewPlayGameReposiory(db.DB)
+	playGameService := services.NewPlayGameService(playGameRespository)
+	playGameHandler := handlers.NewPlayGameHandler(playGameService)
 
-	router.Run("0.0.0.0:8080")
+	routes.SetupRoutes(router, adminConsoleHandler, playGameHandler)
+
+	utils.LogInfo("Server starting on 0.0.0.0:8080")
+	if err := router.Run("0.0.0.0:8080"); err != nil {
+		utils.LogError("Server failed to start: %v", err)
+		panic(err)
+	}
 }
