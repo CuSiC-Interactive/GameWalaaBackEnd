@@ -4,19 +4,29 @@ import (
 	"GameWala-Arcade/models"
 	"GameWala-Arcade/repositories"
 	"GameWala-Arcade/utils"
+	"context"
+	"fmt"
+
+	"github.com/redis/go-redis/v9"
 )
+
+var maxTimeForLevelBoundedGame = uint16(120)
 
 type PlayGameService interface {
 	SaveGameStatus(status models.GameStatus) (int, error)
 	GetGames() ([]models.GameResponse, error)
+	CheckGameCode(code string) (bool, error)
+	GenerateCode() (string, error)
 }
 
 type playGameService struct {
 	playGameRepository repositories.PlayGameRepository
+	redisClient        *redis.Client
 }
 
-func NewPlayGameService(playGameRepository repositories.PlayGameRepository) *playGameService {
-	return &playGameService{playGameRepository: playGameRepository}
+func NewPlayGameService(playGameRepository repositories.PlayGameRepository,
+	redisClient *redis.Client) *playGameService {
+	return &playGameService{playGameRepository: playGameRepository, redisClient: redisClient}
 }
 
 func (s *playGameService) SaveGameStatus(status models.GameStatus) (int, error) {
@@ -73,6 +83,29 @@ func (s *playGameService) GetGames() ([]models.GameResponse, error) {
 	return games, nil
 }
 
+func (s *playGameService) CheckGameCode(code string) (bool, error) {
+	if code == "" {
+		utils.LogError("empty code in service layer? something's fishy 🐠")
+		return true, fmt.Errorf("Code is empty")
+	}
+
+	status, time, err := s.playGameRepository.CheckGameCode(code)
+
+	if err != nil {
+		utils.LogError("Something went wrong... hmm BL layer, kinda sv issue?, err: %s", err)
+		return true, err
+	}
+	var zeroTimer = uint16(0)
+	if time == &zeroTimer {
+		//it must be level bounded game then....
+		time = &maxTimeForLevelBoundedGame
+	}
+
+	pollerForTimer(time, code)
+
+	return status, err
+}
+
 func (s *playGameService) validateTimeAndPrice(gameId uint16, price uint16, playTime *uint16) error {
 	utils.LogInfo("Validating time and price for game ID %d: price=%d, time=%d", gameId, price, *playTime)
 	//call db to cheeck if time and price match with the feeded value.
@@ -87,4 +120,56 @@ func (s *playGameService) validateLevelsAndPrice(gameId uint16, price uint16, le
 	err := s.playGameRepository.ValidateLevelsAndPrice(gameId, price, levels)
 
 	return err
+}
+
+func (s *playGameService) GenerateCode() (string, error) {
+	ctx := context.Background()
+	latestCode, err := s.redisClient.Get(ctx, "latest_konami_code").Result()
+
+	if err == redis.Nil {
+		latestCode = "^^<<>>vvAB"                                   // starting code
+		s.redisClient.Set(ctx, "latest_konami_code", latestCode, 0) // 0 for no expiration
+		return latestCode, err
+	}
+
+	newCode := getNextConsecutiveCode(latestCode)
+	s.redisClient.Set(ctx, "latest_konami_code", newCode, 0) // 0 for no expiration
+	return newCode, nil
+}
+
+func getNextConsecutiveCode(code string) string {
+	charset := []rune{'^', '>', '<', 'v', 'a', 'b'}
+	base := len(charset)
+	runes := []rune(code)
+	n := len(runes)
+
+	carry := 1
+	for i := n - 1; i >= 0; i-- {
+		if carry == 0 {
+			break
+		}
+		idx := indexOf(charset, runes[i])
+		if idx == -1 {
+			idx = 0
+		}
+		newIdx := (idx + carry) % base
+		carry = (idx + carry) / base
+		runes[i] = charset[newIdx]
+	}
+	return string(runes)
+}
+
+func indexOf(slice []rune, r rune) int {
+	for i, v := range slice {
+		if v == r {
+			return i
+		}
+	}
+	return -1
+}
+
+func pollerForTimer(time *uint16, code string) {
+	// poller to keep hitting redis, make sure to run this in go routine.
+	// once the time is over, make played value false, in db.
+	// cool we are at the main part now, will implement this later.
 }
