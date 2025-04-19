@@ -6,12 +6,15 @@ import (
 	"GameWala-Arcade/repositories"
 	"GameWala-Arcade/routes"
 	"GameWala-Arcade/services"
+	"context"
+	"log"
 
 	"GameWala-Arcade/config"
 	"GameWala-Arcade/utils"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+	"github.com/redis/go-redis/v9"
 )
 
 func main() {
@@ -23,8 +26,20 @@ func main() {
 
 	router := gin.Default() // initialize the router for gin.
 	utils.LogInfo("Starting GameWala-Arcade server...")
-	config.LoadConfig()     // load the configurations.
-	db.Initialize()         // Initlialize the db based on the configs loaded.
+	config.LoadConfig() // load the configurations.
+	db.Initialize()     // Initlialize the db based on the configs loaded.
+
+	redisStore := redis.NewClient(&redis.Options{
+		Addr:     "localhost:55003",
+		Password: "", // No password set
+		DB:       0,  // Use default DB
+	})
+
+	_, err := redisStore.Ping(context.Background()).Result()
+	if err != nil {
+		utils.LogError("could not connect to Redis, error: %v", err)
+		log.Fatalf("Could not connect to Redis: %v", err)
+	}
 
 	// cors
 	router.Use(cors.New(cors.Config{
@@ -39,7 +54,7 @@ func main() {
 	adminConsoleHandler := handlers.NewAdminConsoleHandler(adminConsoleService)
 
 	playGameRespository := repositories.NewPlayGameReposiory(db.DB)
-	playGameService := services.NewPlayGameService(playGameRespository)
+	playGameService := services.NewPlayGameService(playGameRespository, redisStore)
 	playGameHandler := handlers.NewPlayGameHandler(playGameService)
 
 	routes.SetupRoutes(router, adminConsoleHandler, playGameHandler)

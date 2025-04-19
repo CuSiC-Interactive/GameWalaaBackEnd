@@ -7,20 +7,19 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-
-	"github.com/lib/pq"
-	_ "github.com/lib/pq"
+	"strings"
 
 	"github.com/gin-gonic/gin"
+	"github.com/lib/pq"
 )
 
 const minPrice = 10
 
 type PlayGameHandler interface {
 	SaveGameStatus(c *gin.Context)
-	// I don't know if we need a poller yet, needs to get my hand dirty with Pi to see if we can utlize the inbuilt timer.
-	// ChangeGameStatus()
-	GetGamesCatalogue(c *gin.Context) // get the games from games table if displayable is true
+	GetGamesCatalogue(c *gin.Context)
+	CheckGameCode(c *gin.Context)
+	GenerateCode(c *gin.Context) //this is something logical ughh.
 }
 
 type playGameHandler struct {
@@ -108,4 +107,51 @@ func (h *playGameHandler) GetGamesCatalogue(c *gin.Context) {
 
 	utils.LogInfo("Successfully retrieved games catalogue")
 	c.JSON(http.StatusOK, gin.H{"games": res})
+}
+
+func (h *playGameHandler) CheckGameCode(c *gin.Context) {
+	code := c.Param("gamecode")
+
+	if isAnyEmpty(code) {
+		utils.LogError("Empty code provided")
+		c.JSON(http.StatusBadRequest, gin.H{"error": "code is empty or null"})
+		return
+	}
+
+	status, err := h.playGameService.CheckGameCode(code)
+	if err != nil {
+
+		if strings.Contains(err.Error(), "Scan error") {
+			utils.LogError("scan error occurred (more likely wrong code entered): %v", err)
+			c.JSON(http.StatusBadRequest, gin.H{"error": fmt.Errorf("Wrong error code entered: '%s'", code).Error()})
+			return
+		}
+
+		utils.LogError("something went wrong please have a look 👀: %v", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "code is empty or null"})
+		return
+	}
+
+	if status == true {
+		utils.LogError("Empty code provided")
+		c.JSON(http.StatusBadRequest, gin.H{"error": fmt.Errorf("This code has already been played: '%s', please get a new code.", err).Error()})
+		return
+	}
+
+	utils.LogInfo("Code Verified: %s", code)
+	c.JSON(http.StatusOK, gin.H{"success": "Code verified successfully!! have a great game :)"})
+	return
+}
+
+func (h *playGameHandler) GenerateCode(c *gin.Context) {
+
+	code, err := h.playGameService.GenerateCode()
+	if err != nil {
+		utils.LogInfo("Something went wrong: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Errorf("Generated code is: %v", err).Error()})
+		return
+	}
+
+	utils.LogInfo("Code is Generated Successfully: %s", code)
+	c.JSON(http.StatusOK, gin.H{"success": fmt.Sprintf("Generated code is: %s", code)})
 }

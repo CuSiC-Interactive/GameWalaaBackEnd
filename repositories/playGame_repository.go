@@ -10,10 +10,11 @@ import (
 
 type PlayGameRepository interface {
 	SaveGameStatus(status models.GameStatus) (int, error)
-	ValidateTimeAndPrice(gameId uint16, price uint16, playTime *uint16) error
-	ValidateLevelsAndPrice(gameId uint16, price uint16, levels *uint8) error
 	GetGames() ([]models.GameResponse, error)
 	FetchPrices() (models.PriceMap, error)
+	CheckGameCode(code string) (bool, *uint16, error)
+	ValidateTimeAndPrice(gameId uint16, price uint16, playTime *uint16) error
+	ValidateLevelsAndPrice(gameId uint16, price uint16, levels *uint8) error
 }
 
 type playGameRepository struct {
@@ -161,5 +162,27 @@ func (r *playGameRepository) FetchPrices() (models.PriceMap, error) {
 	price.TimeMap = timePriceMap
 	price.LevelMap = levelPriceMap
 	return price, nil
+}
 
+func (r *playGameRepository) CheckGameCode(code string) (bool, *uint16, error) {
+
+	var defaultTime = uint16(0)
+	stmt, err := r.db.Prepare("SELECT func_CheckGameCode($1)")
+
+	if err != nil {
+		utils.LogError("Failed to prepare save game status statement: %v", err)
+		return true, &defaultTime, fmt.Errorf("error preparing statement: %w", err)
+	}
+
+	defer stmt.Close()
+	var status bool = false
+	var time *uint16
+	err = stmt.QueryRow(code).Scan(&status, &time)
+
+	if err != nil {
+		utils.LogError("Some error occured something wrong with DB? err: %v", err)
+		return status, &defaultTime, err
+	}
+
+	return status, time, err //if true, then need to implement redis queue to make it false after the time, if timebounded.
 }

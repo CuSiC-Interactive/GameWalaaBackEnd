@@ -26,6 +26,8 @@ func SetupRoutes(router *gin.Engine,
 		{
 			users.GET("/games", playGameHandler.GetGamesCatalogue)
 			users.POST("/games/status", playGameHandler.SaveGameStatus)
+			users.GET("/code-check/:gamecode", playGameHandler.CheckGameCode)
+			users.GET("code-generate", playGameHandler.GenerateCode)
 		}
 	}
 }
