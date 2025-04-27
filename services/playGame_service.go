@@ -124,21 +124,21 @@ func (s *playGameService) validateLevelsAndPrice(gameId uint16, price uint16, le
 
 func (s *playGameService) GenerateCode() (string, error) {
 	ctx := context.Background()
-	latestCode, err := s.redisClient.Get(ctx, "latest_konami_code").Result()
+	latestCode, err := s.redisClient.Get(ctx, "latest_arcade_code").Result()
 
 	if err == redis.Nil {
-		latestCode = "^^<<>>vvAB"                                   // starting code
-		s.redisClient.Set(ctx, "latest_konami_code", latestCode, 0) // 0 for no expiration
+		latestCode = "ABXYSO"                                       // starting code
+		s.redisClient.Set(ctx, "latest_arcade_code", latestCode, 0) // 0 for no expiration
 		return latestCode, err
 	}
 
 	newCode := getNextConsecutiveCode(latestCode)
-	s.redisClient.Set(ctx, "latest_konami_code", newCode, 0) // 0 for no expiration
+	s.redisClient.Set(ctx, "latest_arcade_code", newCode, 0) // 0 for no expiration
 	return newCode, nil
 }
 
 func getNextConsecutiveCode(code string) string {
-	charset := []rune{'^', '>', '<', 'v', 'a', 'b'}
+	charset := []rune{'A', 'B', 'X', 'Y', 'S', 'O'}
 	base := len(charset)
 	runes := []rune(code)
 	n := len(runes)
