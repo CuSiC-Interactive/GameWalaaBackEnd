@@ -15,7 +15,7 @@ var maxTimeForLevelBoundedGame = uint16(120)
 type PlayGameService interface {
 	SaveGameStatus(status models.GameStatus) (int, error)
 	GetGames() ([]models.GameResponse, error)
-	CheckGameCode(code string) (bool, error)
+	CheckGameCode(code string) (bool, error) // arcade will hit this api
 	GenerateCode() (string, error)
 }
 
@@ -101,8 +101,6 @@ func (s *playGameService) CheckGameCode(code string) (bool, error) {
 		time = &maxTimeForLevelBoundedGame
 	}
 
-	pollerForTimer(time, code)
-
 	return status, err
 }
 
@@ -138,7 +136,7 @@ func (s *playGameService) GenerateCode() (string, error) {
 }
 
 func getNextConsecutiveCode(code string) string {
-	charset := []rune{'A', 'B', 'X', 'Y', 'S', 'O'}
+	charset := []rune{'A', 'B', 'O', 'S', 'X', 'Y'}
 	base := len(charset)
 	runes := []rune(code)
 	n := len(runes)
@@ -166,10 +164,4 @@ func indexOf(slice []rune, r rune) int {
 		}
 	}
 	return -1
-}
-
-func pollerForTimer(time *uint16, code string) {
-	// poller to keep hitting redis, make sure to run this in go routine.
-	// once the time is over, make played value false, in db.
-	// cool we are at the main part now, will implement this later.
 }
