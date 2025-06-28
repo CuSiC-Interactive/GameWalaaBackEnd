@@ -12,7 +12,7 @@ type PlayGameRepository interface {
 	SaveGameStatus(status models.GameStatus) (int, error)
 	GetGames() ([]models.GameResponse, error)
 	FetchPrices() (models.PriceMap, error)
-	CheckGameCode(code string) (bool, *uint16, error)
+	CheckGameCode(code string) (models.GameDetails, error)
 	ValidateTimeAndPrice(gameId uint16, price uint16, playTime *uint16) error
 	ValidateLevelsAndPrice(gameId uint16, price uint16, levels *uint8) error
 }
@@ -164,25 +164,27 @@ func (r *playGameRepository) FetchPrices() (models.PriceMap, error) {
 	return price, nil
 }
 
-func (r *playGameRepository) CheckGameCode(code string) (bool, *uint16, error) {
+func (r *playGameRepository) CheckGameCode(code string) (models.GameDetails, error) {
 
 	var defaultTime = uint16(0)
-	stmt, err := r.db.Prepare("SELECT func_CheckGameCode($1)")
+	var gamedetails models.GameDetails
+	gamedetails.Time = defaultTime
+	stmt, err := r.db.
+		Prepare("SELECT is_played, is_timed, level_limit, time_limit, system, rom FROM func_CheckGameCode($1)")
 
 	if err != nil {
 		utils.LogError("Failed to prepare save game status statement: %v", err)
-		return true, &defaultTime, fmt.Errorf("error preparing statement: %w", err)
+		return gamedetails, fmt.Errorf("error preparing statement: %w", err)
 	}
 
 	defer stmt.Close()
-	var status bool = false
-	var time *uint16
-	err = stmt.QueryRow(code).Scan(&status, &time)
+	err = stmt.QueryRow(code).Scan(&gamedetails.IsPlayed, &gamedetails.IsTimed, &gamedetails.Level,
+		&gamedetails.Time, &gamedetails.SystemName, &gamedetails.Rom)
 
 	if err != nil {
 		utils.LogError("Some error occured something wrong with DB? err: %v", err)
-		return status, &defaultTime, err
+		return gamedetails, err
 	}
 
-	return status, time, err //if true, then need to implement redis queue to make it false after the time, if timebounded.
+	return gamedetails, err //if true, then need to implement redis queue to make it false after the time, if timebounded.
 }

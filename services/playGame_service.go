@@ -12,10 +12,12 @@ import (
 
 var maxTimeForLevelBoundedGame = uint16(120)
 
+const staticStartingCode = "ABXYSO"
+
 type PlayGameService interface {
-	SaveGameStatus(status models.GameStatus) (int, error)
+	SaveGameStatus(status models.GameStatus) (int, string, error)
 	GetGames() ([]models.GameResponse, error)
-	CheckGameCode(code string) (bool, error) // arcade will hit this api
+	CheckGameCode(code string) (models.GameDetails, error) // arcade will hit this api
 	GenerateCode() (string, error)
 }
 
@@ -29,7 +31,7 @@ func NewPlayGameService(playGameRepository repositories.PlayGameRepository,
 	return &playGameService{playGameRepository: playGameRepository, redisClient: redisClient}
 }
 
-func (s *playGameService) SaveGameStatus(status models.GameStatus) (int, error) {
+func (s *playGameService) SaveGameStatus(status models.GameStatus) (int, string, error) {
 	utils.LogInfo("Processing save game status for game ID %d", status.GameId)
 
 	if status.IsTimed && status.PlayTime != nil {
@@ -37,26 +39,31 @@ func (s *playGameService) SaveGameStatus(status models.GameStatus) (int, error) 
 
 		if err != nil {
 			utils.LogError("Time and price validation failed for game ID %d: %v", status.GameId, err)
-			return 2, err // 2 means, time and price didn't match (convert this to enum later)
+			return 2, "", err // 2 means, time and price didn't match (convert this to enum later)
 		}
 	} else {
 		err := s.validateLevelsAndPrice(status.GameId, status.Price, status.Levels)
 
 		if err != nil {
 			utils.LogError("Level and price validation failed for game ID %d: %v", status.GameId, err)
-			return 3, err // 3 means, level and price didn't match (convert this to enum later)
+			return 3, "", err // 3 means, level and price didn't match (convert this to enum later)
 		}
 	}
 
+	stat, err := s.GenerateCode()
+	status.Code = stat
 	res, err := s.playGameRepository.SaveGameStatus(status)
 
 	if err != nil {
 		utils.LogError("Failed to save game status for game ID %d: %v", status.GameId, err)
-		return 0, err
+		return 0, "", err
 	}
 
-	utils.LogInfo("Successfully saved game status for game ID %d", status.GameId)
-	return res, err
+	if res == 1 {
+		utils.LogInfo("Successfully saved game status for game ID %d", status.GameId)
+		return 1, stat, err
+	}
+	return 0, "", err
 }
 
 func (s *playGameService) GetGames() ([]models.GameResponse, error) {
@@ -83,22 +90,17 @@ func (s *playGameService) GetGames() ([]models.GameResponse, error) {
 	return games, nil
 }
 
-func (s *playGameService) CheckGameCode(code string) (bool, error) {
+func (s *playGameService) CheckGameCode(code string) (models.GameDetails, error) {
 	if code == "" {
 		utils.LogError("empty code in service layer? something's fishy 🐠")
-		return true, fmt.Errorf("Code is empty")
+		return models.GameDetails{}, fmt.Errorf("Code is empty")
 	}
 
-	status, time, err := s.playGameRepository.CheckGameCode(code)
+	status, err := s.playGameRepository.CheckGameCode(code)
 
 	if err != nil {
 		utils.LogError("Something went wrong... hmm BL layer, kinda sv issue?, err: %s", err)
-		return true, err
-	}
-	var zeroTimer = uint16(0)
-	if time == &zeroTimer {
-		//it must be level bounded game then....
-		time = &maxTimeForLevelBoundedGame
+		return status, err
 	}
 
 	return status, err
@@ -125,7 +127,7 @@ func (s *playGameService) GenerateCode() (string, error) {
 	latestCode, err := s.redisClient.Get(ctx, "latest_arcade_code").Result()
 
 	if err == redis.Nil {
-		latestCode = "ABXYSO"                                       // starting code
+		latestCode = staticStartingCode                             // starting code
 		s.redisClient.Set(ctx, "latest_arcade_code", latestCode, 0) // 0 for no expiration
 		return latestCode, err
 	}
