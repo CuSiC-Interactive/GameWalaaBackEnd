@@ -45,8 +45,8 @@ func (h *playGameHandler) SaveGameStatus(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid game id provided"})
 	}
 
-	if isAnyEmpty(req.Code, req.PaymentReference) {
-		utils.LogError("Missing code or payment reference for game ID: %d", req.GameId)
+	if isAnyEmpty(req.PaymentReference) {
+		utils.LogError("Missing payment reference for game ID: %d", req.GameId)
 		c.JSON(http.StatusPaymentRequired, gin.H{"error": "invalid code, or payment reference id"})
 	}
 
@@ -60,7 +60,7 @@ func (h *playGameHandler) SaveGameStatus(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Time and Level, both can't be null"})
 	}
 
-	res, err := h.playGameService.SaveGameStatus(req)
+	res, code, err := h.playGameService.SaveGameStatus(req)
 
 	if err != nil {
 		utils.LogError("Error saving game status for game ID %d: %v", req.GameId, err)
@@ -91,8 +91,8 @@ func (h *playGameHandler) SaveGameStatus(c *gin.Context) {
 		}
 	}
 
-	utils.LogInfo("Game status saved successfully for game ID %d with code %s", req.GameId, req.Code)
-	c.JSON(http.StatusOK, gin.H{"success": fmt.Sprintf("You can proceed to play the game, please enter the code '%s' in arcade console.", req.Code)})
+	utils.LogInfo("Game status saved successfully for game ID %d with code %s", req.GameId, code)
+	c.JSON(http.StatusOK, gin.H{"success": fmt.Sprintf("You can proceed to play the game, please enter the code '%s' in arcade console.", code)})
 }
 
 func (h *playGameHandler) GetGamesCatalogue(c *gin.Context) {
@@ -118,7 +118,7 @@ func (h *playGameHandler) CheckGameCode(c *gin.Context) {
 		return
 	}
 
-	status, err := h.playGameService.CheckGameCode(code)
+	details, err := h.playGameService.CheckGameCode(code)
 	if err != nil {
 
 		if strings.Contains(err.Error(), "Scan error") {
@@ -128,18 +128,17 @@ func (h *playGameHandler) CheckGameCode(c *gin.Context) {
 		}
 
 		utils.LogError("something went wrong please have a look 👀: %v", err)
-		c.JSON(http.StatusBadRequest, gin.H{"error": "code is empty or null"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "The code you've entered doesn't hold any entry yet, please make sure you have entered the right code."})
 		return
 	}
 
-	if status == true {
-		utils.LogError("Empty code provided")
+	if details.IsPlayed == true {
 		c.JSON(http.StatusBadRequest, gin.H{"error": fmt.Errorf("This code has already been played: '%s', please get a new code.", err).Error()})
 		return
 	}
 
 	utils.LogInfo("Code Verified: %s", code)
-	c.JSON(http.StatusOK, gin.H{"success": "Code verified successfully!! have a great game :)"})
+	c.JSON(http.StatusOK, gin.H{"success": details})
 	return
 }
 

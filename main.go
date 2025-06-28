@@ -57,7 +57,15 @@ func main() {
 	playGameService := services.NewPlayGameService(playGameRespository, redisStore)
 	playGameHandler := handlers.NewPlayGameHandler(playGameService)
 
-	routes.SetupRoutes(router, adminConsoleHandler, playGameHandler)
+	handlePaymentRepository := repositories.NewHandlePaymentReposiory(db.DB)
+	handlePaymentService := services.NewHandlePaymentService(handlePaymentRepository)
+	handlePaymentHandler := handlers.NewHandlePaymentHandler(handlePaymentService)
+
+	routes.SetupRoutes(
+		router,
+		adminConsoleHandler,
+		playGameHandler,
+		handlePaymentHandler)
 
 	utils.LogInfo("Server starting on 0.0.0.0:8080")
 	if err := router.Run("0.0.0.0:8080"); err != nil {
