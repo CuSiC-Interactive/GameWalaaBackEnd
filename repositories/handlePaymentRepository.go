@@ -31,7 +31,7 @@ func (r *handlePaymentRepository) SaveOrderDetails(details models.PaymentStatus)
 	defer stmt.Close()
 
 	_, err = stmt.Exec(details.OrderCreationId, details.RazorpayPaymentId,
-		details.RazorpayOrderId, details.RazorPaySignature)
+		details.RazorpayOrderId, details.RazorpaySignature)
 	if err != nil {
 		utils.LogError("Failed to execute payment status for payment ID %s: %v", details.RazorpayPaymentId, err)
 		return fmt.Errorf("error executing function: %w", err)
