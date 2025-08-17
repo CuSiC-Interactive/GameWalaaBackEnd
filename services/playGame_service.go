@@ -50,8 +50,8 @@ func (s *playGameService) SaveGameStatus(status models.GameStatus) (int, string,
 		}
 	}
 
-	stat, err := s.GenerateCode()
-	status.Code = stat
+	code, err := s.GenerateCode()
+	status.Code = code
 	res, err := s.playGameRepository.SaveGameStatus(status)
 
 	if err != nil {
@@ -61,7 +61,7 @@ func (s *playGameService) SaveGameStatus(status models.GameStatus) (int, string,
 
 	if res == 1 {
 		utils.LogInfo("Successfully saved game status for game ID %d", status.GameId)
-		return 1, stat, err
+		return 1, code, err
 	}
 	return 0, "", err
 }

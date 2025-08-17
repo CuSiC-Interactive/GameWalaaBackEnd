@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"GameWala-Arcade/config"
+	"GameWala-Arcade/models"
 	"GameWala-Arcade/services"
 	"fmt"
 	"net/http"
@@ -14,6 +15,7 @@ import (
 
 type HandlePaymentHandler interface {
 	CreateOrder(c *gin.Context)
+	SaveOrderDetails(c *gin.Context)
 }
 
 type handlePaymentHandler struct {
@@ -39,6 +41,22 @@ func (h *handlePaymentHandler) CreateOrder(c *gin.Context) {
 	if err == nil {
 		c.JSON(http.StatusOK, gin.H{"details": body})
 	} else {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Errorf("razorpay might be down: %w amount: %d", err, amount_inr).Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Errorf("razorpay might be down, please try later.").Error()})
+	}
+}
+
+func (h *handlePaymentHandler) SaveOrderDetails(c *gin.Context) {
+	var paymentDetails models.PaymentStatus
+	if err := c.ShouldBindJSON(&paymentDetails); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid payment details provided"})
+		return
+	}
+
+	err := h.handlePaymentService.SaveOrderDetails(paymentDetails)
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"Error": "Some error saving payment details. please check logs."})
+	} else {
+		c.JSON(http.StatusOK, gin.H{"Success: ": "Successfully saved order details."})
 	}
 }
