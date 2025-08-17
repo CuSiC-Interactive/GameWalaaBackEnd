@@ -92,7 +92,7 @@ func (h *playGameHandler) SaveGameStatus(c *gin.Context) {
 	}
 
 	utils.LogInfo("Game status saved successfully for game ID %d with code %s", req.GameId, code)
-	c.JSON(http.StatusOK, gin.H{"success": fmt.Sprintf("You can proceed to play the game, please enter the code '%s' in arcade console.", code)})
+	c.JSON(http.StatusOK, gin.H{"Code": code})
 }
 
 func (h *playGameHandler) GetGamesCatalogue(c *gin.Context) {

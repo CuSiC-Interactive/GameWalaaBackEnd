@@ -4,5 +4,5 @@ type PaymentStatus struct {
 	OrderCreationId   string
 	RazorpayPaymentId string
 	RazorpayOrderId   string
-	RazorPaySignature string
+	RazorpaySignature string
 }
