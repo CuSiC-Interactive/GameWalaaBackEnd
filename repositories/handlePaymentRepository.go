@@ -22,16 +22,12 @@ func NewHandlePaymentReposiory(db *sql.DB) *handlePaymentRepository {
 func (r *handlePaymentRepository) SaveOrderDetails(details models.PaymentStatus) error {
 	utils.LogInfo("Saving payment status for payment ID %s", details.RazorpayPaymentId)
 
-	// Prepare the call to the stored procedure
-	stmt, err := r.db.Prepare("SELECT func_InsertPaymentStatus($1, $2, $3, $4)")
-	if err != nil {
-		utils.LogError("Failed to prepare save payment status statement: %v", err)
-		return fmt.Errorf("error preparing statement: %w", err)
-	}
-	defer stmt.Close()
+	_, err := r.db.Exec("SELECT func_InsertPaymentStatus($1, $2, $3, $4)",
+		details.OrderCreationId,
+		details.RazorpayPaymentId,
+		details.RazorpayOrderId,
+		details.RazorpaySignature)
 
-	_, err = stmt.Exec(details.OrderCreationId, details.RazorpayPaymentId,
-		details.RazorpayOrderId, details.RazorpaySignature)
 	if err != nil {
 		utils.LogError("Failed to execute payment status for payment ID %s: %v", details.RazorpayPaymentId, err)
 		return fmt.Errorf("error executing function: %w", err)
