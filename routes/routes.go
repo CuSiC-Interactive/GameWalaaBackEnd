@@ -9,7 +9,8 @@ import (
 func SetupRoutes(router *gin.Engine,
 	adminConsoleHandler handlers.AdminConsoleHandler,
 	playGameHandler handlers.PlayGameHandler,
-	handlePaymentHandler handlers.HandlePaymentHandler) {
+	handlePaymentHandler handlers.HandlePaymentHandler,
+	marketPlaceHandler handlers.MarketPlaceHandler) {
 	v1 := router.Group("/api/v1")
 	{
 		admin := v1.Group("/restricted")
@@ -35,6 +36,11 @@ func SetupRoutes(router *gin.Engine,
 		{
 			payment.GET("/order/:amount", handlePaymentHandler.CreateOrder)
 			payment.POST("/order/details", handlePaymentHandler.SaveOrderDetails)
+		}
+
+		shop := v1.Group("/shop")
+		{
+			shop.GET("/products", marketPlaceHandler.Products)
 		}
 	}
 }
