@@ -48,7 +48,7 @@ func (h *handlePaymentHandler) CreateOrder(c *gin.Context) {
 func (h *handlePaymentHandler) SaveOrderDetails(c *gin.Context) {
 	var paymentDetails models.PaymentStatus
 	if err := c.ShouldBindJSON(&paymentDetails); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid payment details provided"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid payment details format provided"})
 		return
 	}
 

@@ -61,11 +61,16 @@ func main() {
 	handlePaymentService := services.NewHandlePaymentService(handlePaymentRepository)
 	handlePaymentHandler := handlers.NewHandlePaymentHandler(handlePaymentService)
 
+	marketPlaceRepository := repositories.NewMarketPlaceReposiory(db.DB)
+	marketPlaceService := services.NewMarketPlaceService(marketPlaceRepository)
+	marketPlaceHandler := handlers.NewMarketPlaceHandler(marketPlaceService)
+
 	routes.SetupRoutes(
 		router,
 		adminConsoleHandler,
 		playGameHandler,
-		handlePaymentHandler)
+		handlePaymentHandler,
+		marketPlaceHandler)
 
 	utils.LogInfo("Server starting on 0.0.0.0:8080")
 	if err := router.Run("0.0.0.0:8080"); err != nil {
