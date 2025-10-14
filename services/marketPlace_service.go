@@ -36,6 +36,8 @@ func NewMarketPlaceService(marketPlaceRepository repositories.MarketPlaceReposit
 	return &marketPlaceService{marketPlaceRepository: marketPlaceRepository}
 }
 
+const s3BaseUrl string = "https://%s.storage.supabase.co/storage/v1/s3"
+
 func (s *marketPlaceService) FetchProducts(productType models.ProductType) ([]models.Product, error) {
 	products, err := s.marketPlaceRepository.FetchProducts(productType)
 
@@ -45,9 +47,9 @@ func (s *marketPlaceService) FetchProducts(productType models.ProductType) ([]mo
 	}
 
 	// aws stuff
-	supabaseURL := fmt.Sprintf("https://%s.storage.supabase.co/storage/v1/s3", config.GetString("supabaseProjectID"))
+	supabaseURL := fmt.Sprintf(s3BaseUrl, config.GetString("supabaseProjectID"))
 
-	creds := credentials.NewStaticCredentialsProvider("ac72365485137b2b1d4e423fed8bd915", "137a90eb7b0a6555457ce3696c98b1febb047f81933e70239ea819da1c032b14", "")
+	creds := credentials.NewStaticCredentialsProvider(config.GetString("key"), config.GetString("secret"), "")
 
 	// Load the configuration, providing the custom endpoint resolver and static credentials.
 	cfg, err := awsconfig.LoadDefaultConfig(context.TODO(),
@@ -68,7 +70,7 @@ func (s *marketPlaceService) FetchProducts(productType models.ProductType) ([]mo
 	})
 
 	// This is the base URL for constructing the final public links.
-	publicURLBase := fmt.Sprintf("https://%s.supabase.co/storage/v1/object/public", config.GetString("supabaseProjectID"))
+	publicURLBase := fmt.Sprintf(s3BaseUrl, config.GetString("supabaseProjectID"))
 
 	storageInfo := S3BucketInfo{
 		Client:        s3Client,
@@ -126,7 +128,6 @@ func getImageLinks(ctx context.Context, info S3BucketInfo) ([]string, error) {
 
 			if isImage {
 				// Construct the public Supabase URL for the object.
-				// Format: https://<project-id>.supabase.co/storage/v1/object/public/<bucketname>/<object-key>
 				url := fmt.Sprintf("%s/%s/%s", info.PublicURLBase, info.BucketName, key)
 				imageLinks = append(imageLinks, url)
 			}
