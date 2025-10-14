@@ -23,7 +23,7 @@ func NewMarketPlaceHandler(marketPlaceService services.MarketPlaceService) *mark
 }
 
 // get the products, type will be defined in queryparam, like ?cards, or ?stickers
-// Note: This API needs pagination in future.
+// Note: This API may need pagination in future.
 func (h *marketPlaceHandler) Products(c *gin.Context) {
 	requestedType := c.DefaultQuery("type", "")
 	productType, err := stringToProductType(requestedType)
