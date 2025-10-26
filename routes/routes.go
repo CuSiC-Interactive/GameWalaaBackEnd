@@ -29,7 +29,7 @@ func SetupRoutes(router *gin.Engine,
 			users.GET("/games", playGameHandler.GetGamesCatalogue)
 			users.POST("/games/status", playGameHandler.SaveGameStatus)
 			users.GET("/code-check/:gamecode", playGameHandler.CheckGameCode)
-			// users.GET("code-generate", playGameHandler.GenerateCode) // unexposed, not needed
+			users.GET("/code-generate", playGameHandler.GenerateCode) // <-- Enable for testing
 		}
 
 		payment := v1.Group("payment")
@@ -37,6 +37,8 @@ func SetupRoutes(router *gin.Engine,
 			payment.GET("/order/:amount", handlePaymentHandler.CreateOrder)
 			payment.POST("/order/details", handlePaymentHandler.SaveOrderDetails)
 		}
+		// Add this outside payment group for simplicity
+		v1.GET("/game-launch-status", handlePaymentHandler.GameLaunchStatus)
 
 		shop := v1.Group("/shop")
 		{

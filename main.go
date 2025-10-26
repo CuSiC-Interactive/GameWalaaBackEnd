@@ -30,7 +30,7 @@ func main() {
 	db.Initialize()     // Initlialize the db based on the configs loaded.
 
 	redisStore := redis.NewClient(&redis.Options{
-		Addr:     "localhost:55003",
+		Addr:     "localhost:6379", // Changed from 55003 to 6379
 		Password: "", // No password set
 		DB:       0,  // Use default DB
 	})
@@ -43,10 +43,10 @@ func main() {
 
 	// cors
 	router.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"http://localhost:xyz"}, // Allow the frontend URL
+		AllowOrigins:     []string{"http://localhost:5173" , "http://10.0.100.39:5173"},
 		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE"},
 		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
-		AllowCredentials: true, // Allow cookies to be sent with cross-origin requests
+		AllowCredentials: true,
 	}))
 
 	adminConsoleRepository := repositories.NewAdminConsoleRepository(db.DB)

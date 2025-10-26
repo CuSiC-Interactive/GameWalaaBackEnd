@@ -16,6 +16,7 @@ import (
 type HandlePaymentHandler interface {
 	CreateOrder(c *gin.Context)
 	SaveOrderDetails(c *gin.Context)
+	GameLaunchStatus(c *gin.Context)
 }
 
 type handlePaymentHandler struct {
@@ -41,6 +42,8 @@ func (h *handlePaymentHandler) CreateOrder(c *gin.Context) {
 	if err == nil {
 		c.JSON(http.StatusOK, gin.H{"details": body})
 	} else {
+		// Log the actual error for debugging
+		fmt.Printf("Razorpay order creation error: %v\n", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Errorf("razorpay might be down, please try later.").Error()})
 	}
 }
@@ -57,6 +60,20 @@ func (h *handlePaymentHandler) SaveOrderDetails(c *gin.Context) {
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"Error": "Some error saving payment details. please check logs."})
 	} else {
+		// Set launch flag and time limit
+		gameLaunchFlag = true
+		gameTimeLimit = 10 // Set to desired minutes or get from paymentDetails
 		c.JSON(http.StatusOK, gin.H{"Success: ": "Successfully saved order details."})
 	}
 }
+
+func (h *handlePaymentHandler) GameLaunchStatus(c *gin.Context) {
+	c.JSON(http.StatusOK, gin.H{
+		"launch": gameLaunchFlag,
+		"time_limit": gameTimeLimit,
+	})
+}
+
+// Add these at the top of the file
+var gameLaunchFlag bool
+var gameTimeLimit int
