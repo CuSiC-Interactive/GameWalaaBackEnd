@@ -43,7 +43,7 @@ func main() {
 
 	// cors
 	router.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"http://localhost:5173" , "http://10.0.100.39:5173"},
+		AllowOrigins:     []string{"http://localhost:5173" , "http://10.0.5.163:5173" ,"http://localhost:5000"},
 		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE"},
 		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
 		AllowCredentials: true,
@@ -59,7 +59,7 @@ func main() {
 
 	handlePaymentRepository := repositories.NewHandlePaymentReposiory(db.DB)
 	handlePaymentService := services.NewHandlePaymentService(handlePaymentRepository)
-	handlePaymentHandler := handlers.NewHandlePaymentHandler(handlePaymentService)
+	handlePaymentHandler := handlers.NewHandlePaymentHandler(handlePaymentService, redisStore)
 
 	marketPlaceRepository := repositories.NewMarketPlaceReposiory(db.DB)
 	marketPlaceService := services.NewMarketPlaceService(marketPlaceRepository)
