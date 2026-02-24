@@ -96,17 +96,19 @@ func (h *playGameHandler) GetGamesCatalogue(c *gin.Context) {
 	utils.LogInfo("Received request to get games catalogue")
 	// var res models.GameResponse
 	arcade_id := c.Request.URL.Query().Get("id")
-	isValid, err := h.ArcadeService.ValidateArcade(arcade_id)
-	if err != nil {
-		utils.LogError("Error validating arcade ID: %v", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Errorf("Error validating arcade ID: %w", err).Error()})
-		return
-	}
+	if arcade_id != "" {
+		isValid, err := h.ArcadeService.ValidateArcade(arcade_id)
+		if err != nil {
+			utils.LogError("Error validating arcade ID: %v", err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Errorf("Error validating arcade ID: %w", err).Error()})
+			return
+		}
 
-	if !isValid {
-		utils.LogError("Invalid arcade ID provided: %s", arcade_id)
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid arcade ID provided"})
-		return
+		if !isValid {
+			utils.LogError("Invalid arcade ID provided: %s", arcade_id)
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid arcade ID provided"})
+			return
+		}
 	}
 
 	res, err := h.playGameService.GetGames(arcade_id)
