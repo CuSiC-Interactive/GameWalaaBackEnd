@@ -1,6 +1,7 @@
 package repositories
 
 import (
+	"GameWala-Arcade/utils"
 	"database/sql"
 )
 
@@ -20,8 +21,9 @@ func (r *arcadeRepository) ValidateArcade(arcadeId string) (bool, error) {
 	// Implement the logic to validate the arcade ID against the database.
 	// For now, we will return true for any non-empty arcade ID.
 	var count int
-	err := r.db.QueryRow("SELECT COUNT(*) FROM Arcade WHERE id = ?", arcadeId).Scan(&count)
+	err := r.db.QueryRow(`SELECT COUNT(*) FROM "Arcade" WHERE id = $1`, arcadeId).Scan(&count)
 	if err != nil {
+		utils.LogError("Getting some error while executing statement on DB %v", err)
 		return false, err
 	}
 
