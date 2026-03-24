@@ -5,8 +5,6 @@ import (
 	"GameWala-Arcade/repositories"
 	"GameWala-Arcade/utils"
 	"fmt"
-
-	"github.com/redis/go-redis/v9"
 )
 
 var maxTimeForLevelBoundedGame = uint16(120)
@@ -21,12 +19,10 @@ type PlayGameService interface {
 
 type playGameService struct {
 	playGameRepository repositories.PlayGameRepository
-	redisClient        *redis.Client
 }
 
-func NewPlayGameService(playGameRepository repositories.PlayGameRepository,
-	redisClient *redis.Client) *playGameService {
-	return &playGameService{playGameRepository: playGameRepository, redisClient: redisClient}
+func NewPlayGameService(playGameRepository repositories.PlayGameRepository) *playGameService {
+	return &playGameService{playGameRepository: playGameRepository}
 }
 
 func (s *playGameService) GetGames(arcadeId string) ([]models.GameResponse, error) {
@@ -68,49 +64,3 @@ func (s *playGameService) CheckGameCode(code string) (models.GameDetails, error)
 
 	return status, err
 }
-
-// func (s *playGameService) GenerateCode() (string, error) {
-// 	ctx := context.Background()
-// 	latestCode, err := s.redisClient.Get(ctx, "latest_arcade_code").Result()
-
-// 	if err == redis.Nil {
-// 		latestCode = staticStartingCode                             // starting code
-// 		s.redisClient.Set(ctx, "latest_arcade_code", latestCode, 0) // 0 for no expiration
-// 		return latestCode, err
-// 	}
-
-// 	newCode := getNextConsecutiveCode(latestCode)
-// 	s.redisClient.Set(ctx, "latest_arcade_code", newCode, 0) // 0 for no expiration
-// 	return newCode, nil
-// }
-
-// func getNextConsecutiveCode(code string) string {
-// 	charset := []rune{'A', 'B', 'O', 'S', 'X', 'Y'}
-// 	base := len(charset)
-// 	runes := []rune(code)
-// 	n := len(runes)
-
-// 	carry := 1
-// 	for i := n - 1; i >= 0; i-- {
-// 		if carry == 0 {
-// 			break
-// 		}
-// 		idx := indexOf(charset, runes[i])
-// 		if idx == -1 {
-// 			idx = 0
-// 		}
-// 		newIdx := (idx + carry) % base
-// 		carry = (idx + carry) / base
-// 		runes[i] = charset[newIdx]
-// 	}
-// 	return string(runes)
-// }
-
-// func indexOf(slice []rune, r rune) int {
-// 	for i, v := range slice {
-// 		if v == r {
-// 			return i
-// 		}
-// 	}
-// 	return -1
-// }

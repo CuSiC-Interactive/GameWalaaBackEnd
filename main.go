@@ -6,7 +6,6 @@ import (
 	"GameWala-Arcade/repositories"
 	"GameWala-Arcade/routes"
 	"GameWala-Arcade/services"
-	"context"
 	"log"
 
 	"GameWala-Arcade/config"
@@ -16,7 +15,6 @@ import (
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
-	"github.com/redis/go-redis/v9"
 )
 
 func main() {
@@ -31,17 +29,17 @@ func main() {
 	config.LoadConfig() // load the configurations.
 	db.Initialize()     // Initlialize the db based on the configs loaded.
 
-	redisStore := redis.NewClient(&redis.Options{
-		Addr:     "127.0.0.1:55000",
-		Password: "", // No password set
-		DB:       0,  // Use default DB
-	})
+	// redisStore := redis.NewClient(&redis.Options{
+	// 	Addr:     "127.0.0.1:55000",
+	// 	Password: "", // No password set
+	// 	DB:       0,  // Use default DB
+	// })
 
-	_, err := redisStore.Ping(context.Background()).Result()
-	if err != nil {
-		utils.LogError("could not connect to Redis, error: %v", err)
-		log.Fatalf("Could not connect to Redis: %v", err)
-	}
+	// _, err := redisStore.Ping(context.Background()).Result()
+	// if err != nil {
+	// 	utils.LogError("could not connect to Redis, error: %v", err)
+	// 	log.Fatalf("Could not connect to Redis: %v", err)
+	// }
 
 	// Initialize MQTT connections once
 	mqttService, err := mqtt.NewMQTTService(
@@ -68,7 +66,7 @@ func main() {
 	adminConsoleHandler := handlers.NewAdminConsoleHandler(adminConsoleService)
 
 	playGameRepository := repositories.NewPlayGameReposiory(db.DB)
-	playGameService := services.NewPlayGameService(playGameRepository, redisStore)
+	playGameService := services.NewPlayGameService(playGameRepository)
 	handlePublishService := services.NewConnectionToBrokerService(mqttService, playGameRepository)
 	playGameHandler := handlers.NewPlayGameHandler(playGameService, ArcadeService)
 
