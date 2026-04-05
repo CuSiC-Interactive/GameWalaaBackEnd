@@ -2,6 +2,7 @@ package utils
 
 import (
 	utils "GameWala-Arcade/utils"
+	"crypto/tls"
 	json "encoding/json"
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
@@ -11,10 +12,18 @@ type MQTTService struct {
 	client mqtt.Client
 }
 
-func NewMQTTService(broker, clientID string) (*MQTTService, error) {
+func NewMQTTService(broker, clientID string, username string, password string) (*MQTTService, error) {
+
+	tlsConfig := &tls.Config{
+		InsecureSkipVerify: false, // true if using self-signed and you don't want CA check
+	}
+
 	opts := mqtt.NewClientOptions().
 		AddBroker(broker).
 		SetClientID(clientID).
+		SetUsername(username).
+		SetPassword(password).
+		SetTLSConfig(tlsConfig).
 		SetAutoReconnect(true)
 
 	client := mqtt.NewClient(opts)

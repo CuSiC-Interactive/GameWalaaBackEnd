@@ -7,6 +7,7 @@ import (
 	"GameWala-Arcade/routes"
 	"GameWala-Arcade/services"
 	"log"
+	"path/filepath"
 
 	"GameWala-Arcade/config"
 	"GameWala-Arcade/utils"
@@ -22,6 +23,7 @@ func main() {
 	if err := utils.InitLogger(); err != nil {
 		panic("Failed to initialize logger: " + err.Error())
 	}
+
 	defer utils.CloseLogger()
 
 	router := gin.Default() // initialize the router for gin.
@@ -45,6 +47,8 @@ func main() {
 	mqttService, err := mqtt.NewMQTTService(
 		"tcp://localhost:1883",
 		"backend-server",
+		config.GetString("mosquitto_username"),
+		config.GetString("mosquitto_password"),
 	)
 	if err != nil {
 		log.Fatal(err)
@@ -84,6 +88,29 @@ func main() {
 		playGameHandler,
 		handlePaymentHandler,
 		marketPlaceHandler)
+
+	// Serve assets correctly
+	router.Static("/assets", "./frontend/build/static/assets")
+
+	// Serve images
+	router.Static("/Images", "./frontend/build/static/Images")
+
+	// Serve logo
+	router.StaticFile("/cusic-logo.png", "./frontend/build/static/cusic-logo.png")
+
+	// Root route (IMPORTANT because index.html is outside build)
+	router.GET("/", func(c *gin.Context) {
+		c.File("./frontend/index.html")
+	})
+
+	// React fallback
+	router.NoRoute(func(c *gin.Context) {
+		if filepath.Ext(c.Request.URL.Path) != "" {
+			c.Status(404)
+			return
+		}
+		c.File("./frontend/index.html")
+	})
 
 	utils.LogInfo("Server starting on 0.0.0.0:8080")
 	if err := router.Run("0.0.0.0:8080"); err != nil {
