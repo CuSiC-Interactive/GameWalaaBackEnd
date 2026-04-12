@@ -45,10 +45,12 @@ func main() {
 
 	// Initialize MQTT connections once
 	mqttService, err := mqtt.NewMQTTService(
-		"tcp://localhost:1883",
-		"backend-server",
-		config.GetString("mosquitto_username"),
-		config.GetString("mosquitto_password"),
+		config.GetString("mqtt_broker_url"),
+		config.GetString("mqtt_client_id"),
+		config.GetString("mqtt_username"),
+		config.GetString("mqtt_password"),
+		config.GetString("mqtt_ca_cert_path"),
+		config.GetBool("mqtt_tls_skip_verify"),
 	)
 	if err != nil {
 		log.Fatal(err)
