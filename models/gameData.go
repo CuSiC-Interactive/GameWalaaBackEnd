@@ -12,7 +12,7 @@ type GameData struct {
 }
 
 type GameStatus struct {
-	ArcadeId         string    `json:"arcade_id"`
+	ArcadeId         string    `json:"arcadeId"`
 	Name             string    `json:"name"`
 	GameId           uint16    `json:"gameId"`
 	IsTimed          bool      `json:"isTimed"`

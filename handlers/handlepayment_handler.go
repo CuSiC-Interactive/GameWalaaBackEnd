@@ -92,6 +92,7 @@ func (h *handlePaymentHandler) SaveOrderDetails(c *gin.Context) {
 		// least likely to occur as its verified before, but just to be safe. If it occurs that means
 		// the payment is needs to be refunded, we will look at this case later.
 		// let's continue with happy flow for now, and log this case for future reference.
+		utils.LogError("Arcade id is missing")
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Arcade ID is required and must be valid"})
 		return
 	}
